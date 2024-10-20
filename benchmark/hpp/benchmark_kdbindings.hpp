@@ -1,7 +1,7 @@
 #pragma once
 
 //KDAB lib include
-#include "src/kdbindings/signal.h"
+#include "kdbindings/signal.h"
 
 
 //Benchmark include
@@ -12,10 +12,9 @@ class benchmark_kdbindings
 {
 private:
     /* data */
-    KDBindings::ScopedConnection reg;
+    KDBindings::ConnectionHandle reg;
 
-
-    NOINLINE(void handler(Rng& rng))
+   NOINLINE(void handler(Rng& rng))
     {
         volatile std::size_t a = rng(); (void)a;
     }
@@ -25,11 +24,15 @@ public:
 
     using Signal = KDBindings::Signal<Rng&>;
 
+
+    benchmark_kdbindings() = default;
+    ~benchmark_kdbindings() { reg.disconnect(); }
+
     
     template <typename Subject, typename Foo>
     static void connect_method(Subject& subject, Foo& foo)
     {
-        foo.reg = subject.connect(&foo, &Foo::handler);
+        foo.reg = subject.connect(&Foo::handler, &foo);
     }
 
     template <typename Subject>
@@ -38,6 +41,7 @@ public:
         subject.emit(rng);
     }
 
+    static void initialize();
 
     static void validate_assert(std::size_t);
     static double construction(std::size_t, std::size_t);
